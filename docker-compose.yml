@@ -1,0 +1,11 @@
+services:
+  skipper:
+    build: .
+    image: skipper:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${SKIPPER_REPO:-.}:/repo
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    restart: unless-stopped

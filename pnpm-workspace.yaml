@@ -1,0 +1,7 @@
+packages:
+  - 'core'
+  - 'cli'
+  - 'ui'
+  - 'adapters'
+allowBuilds:
+  esbuild: true

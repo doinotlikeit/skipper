@@ -1,0 +1,28 @@
+{"actor":"system","sprint":"sprint-02","stage":"intake","type":"message","note":"sprint.created: Packaging + self-hosting: Dockerfile, adapter use, and the self-hosting loop (INIT-5)","ts":"2026-06-01T05:46:34.448Z"}
+{"actor":"system","sprint":"sprint-02","stage":"intake","type":"message","note":"Illegal transition: intake → intake (must follow stage order)","ts":"2026-06-01T05:46:37.596Z"}
+{"actor":"system","sprint":"sprint-02","stage":"intake","type":"message","note":"intake gate requires an artifact event to be recorded","ts":"2026-06-01T05:48:02.156Z"}
+{"actor":"system","sprint":"sprint-02","stage":"intake","type":"artifact","ref":"intake-stub","note":"stub intake output","ts":"2026-06-01T05:48:35.116Z"}
+{"actor":"system","sprint":"sprint-02","stage":"intake","type":"transition","note":"intake → adr","ts":"2026-06-01T05:48:35.119Z"}
+{"actor":"system","sprint":"sprint-02","stage":"adr","type":"signoff_request","ref":"9486e960-b110-4fd8-9e6a-79688fbc0992","note":"Stub adr sign-off required","ts":"2026-06-01T05:49:08.345Z"}
+{"actor":"human:rcooray","sprint":"sprint-02","stage":"adr","type":"signoff","ref":"f615f6d6-cdae-4d8e-ac5e-51f7bec34177","note":"ADR approved — Dockerfile + compose approach is correct","ts":"2026-06-01T05:49:16.047Z"}
+{"actor":"system","sprint":"sprint-02","stage":"adr","type":"signoff_request","ref":"fbe34187-dfb3-48f5-b8d1-36cc91105617","note":"Stub adr sign-off required","ts":"2026-06-01T05:49:19.822Z"}
+{"actor":"system","sprint":"sprint-02","stage":"adr","type":"transition","note":"adr → plan","ts":"2026-06-01T05:50:42.696Z"}
+{"actor":"system","sprint":"sprint-02","stage":"plan","type":"artifact","ref":"plan-stub","note":"stub plan output","ts":"2026-06-01T05:50:42.697Z"}
+{"actor":"system","sprint":"sprint-02","stage":"plan","type":"transition","note":"plan → build","ts":"2026-06-01T05:50:42.698Z"}
+{"actor":"system","sprint":"sprint-02","stage":"build","type":"artifact","ref":"build-stub","note":"stub build output","ts":"2026-06-01T05:50:42.699Z"}
+{"actor":"system","sprint":"sprint-02","stage":"build","type":"transition","note":"build → check","ts":"2026-06-01T05:50:42.699Z"}
+{"actor":"system","sprint":"sprint-02","stage":"check","type":"artifact","ref":"check-stub","note":"stub check output","ts":"2026-06-01T05:50:42.700Z"}
+{"actor":"system","sprint":"sprint-02","stage":"check","type":"message","note":"check gate requires at least one check result event","ts":"2026-06-01T05:50:42.700Z"}
+{"actor":"system","sprint":"sprint-02","stage":"check","type":"check","ref":"stub-check","note":"{\"name\":\"stub-check\",\"passed\":true,\"output\":\"stub checks passed\"}","ts":"2026-06-01T05:52:03.064Z"}
+{"actor":"system","sprint":"sprint-02","stage":"check","type":"artifact","ref":"check-stub","note":"stub checks passed","ts":"2026-06-01T05:52:03.065Z"}
+{"actor":"system","sprint":"sprint-02","stage":"check","type":"transition","note":"check → ship","ts":"2026-06-01T05:52:03.066Z"}
+{"actor":"system","sprint":"sprint-02","stage":"ship","type":"message","note":"ship gate requires a human sign-off (actor must start with human:)","ts":"2026-06-01T05:52:03.067Z"}
+{"actor":"system","sprint":"sprint-02","stage":"ship","type":"signoff_request","ref":"22fc609c-b6df-4a6b-a20d-822e8cf7269d","note":"Stub ship sign-off required","ts":"2026-06-01T05:52:03.067Z"}
+{"actor":"human:rcooray","sprint":"sprint-02","stage":"ship","type":"signoff","ref":"aa62908e-c6f0-4bf5-a92b-e85f7e43b9de","note":"Ship approved — Milestone E packaging shipped","ts":"2026-06-01T05:52:18.928Z"}
+{"actor":"system","sprint":"sprint-02","stage":"ship","type":"transition","note":"ship → watch","ts":"2026-06-01T05:52:22.887Z"}
+{"actor":"system","sprint":"sprint-02","stage":"watch","type":"artifact","ref":"watch-stub","note":"stub watch output","ts":"2026-06-01T05:52:22.889Z"}
+{"actor":"system","sprint":"sprint-02","stage":"watch","type":"transition","note":"watch → retro","ts":"2026-06-01T05:52:22.890Z"}
+{"actor":"system","sprint":"sprint-02","stage":"retro","type":"artifact","ref":"retro-stub","note":"stub retro output","ts":"2026-06-01T05:52:22.890Z"}
+{"actor":"system","sprint":"sprint-02","stage":"retro","type":"artifact","ref":"retro-stub","note":"stub retro output","ts":"2026-06-01T05:53:20.325Z"}
+{"actor":"system","sprint":"sprint-02","stage":"retro","type":"transition","note":"retro → complete","ts":"2026-06-01T05:53:20.327Z"}
+{"actor":"human:ui","sprint":"sprint-02","stage":"adr","type":"signoff","ref":"05e16443-97d9-42c4-a46e-1dcdd204a4a8","note":"","ts":"2026-06-01T06:18:08.140Z"}

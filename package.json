@@ -1,0 +1,14 @@
+{
+  "name": "skipper",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A self-contained SDLC agent. One install, a small crew, declared sprint, human sign-offs.",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm --filter @skipper/core build && pnpm --filter @skipper/cli exec node dist/bin/skipper.js up"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

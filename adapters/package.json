@@ -1,0 +1,30 @@
+{
+  "name": "@skipper/adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Default adapter implementations: markdown, stub",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@skipper/core": "workspace:*",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/uuid": "^10.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

@@ -1,0 +1,3 @@
+{"sprint":"sprint-02","stage":"adr","actor":"human:rcooray","note":"ADR approved — Dockerfile + compose approach is correct","id":"f615f6d6-cdae-4d8e-ac5e-51f7bec34177","ts":"2026-06-01T05:49:16.047Z"}
+{"sprint":"sprint-02","stage":"ship","actor":"human:rcooray","note":"Ship approved — Milestone E packaging shipped","id":"aa62908e-c6f0-4bf5-a92b-e85f7e43b9de","ts":"2026-06-01T05:52:18.927Z"}
+{"sprint":"sprint-02","stage":"adr","actor":"human:ui","note":"","id":"05e16443-97d9-42c4-a46e-1dcdd204a4a8","ts":"2026-06-01T06:18:08.140Z"}

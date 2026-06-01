@@ -1,0 +1,22 @@
+{
+  "name": "@skipper/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Headless CLI — thin client of Core",
+  "bin": {
+    "skipper": "./dist/bin/skipper.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@skipper/core": "workspace:*",
+    "@skipper/adapters": "workspace:*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.4"
+  }
+}

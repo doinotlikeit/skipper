@@ -1,0 +1,16 @@
+adapters:
+  roadmap: markdown
+  workboard: markdown
+  conductor: stub
+  persona: stub
+  check:
+    - stub
+  deploy: stub
+budgets:
+  default:
+    max_tokens: 100000
+    max_cost_usd: 5.00
+models:
+  architect: claude-sonnet-4-6
+  coder: claude-sonnet-4-6
+  reviewer: claude-opus-4-7

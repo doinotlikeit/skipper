@@ -1,0 +1,16 @@
+# Runtime / ephemeral
+.skipper/run.json
+.skipper/worktrees/
+~/.skipper/
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Env
+.env
+.env.local
+
+# macOS
+.DS_Store
