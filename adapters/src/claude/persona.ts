@@ -9,7 +9,6 @@ import type {
   Workspace,
 } from '@skipper/core';
 import { SYSTEM_PROMPTS } from './prompts.js';
-import { createWorktree } from './worktree.js';
 
 export interface ClaudePersonaOptions {
   /** Primary model for most personas. Default: 'claude-sonnet-4-6' */
@@ -42,34 +41,10 @@ export class ClaudePersonaAdapter implements PersonaAdapter {
 
   async run(task: StageTask, workspace: Workspace): Promise<StageResult> {
     const systemPrompt = SYSTEM_PROMPTS[task.stage];
+    // workspace.worktreePath (when present) is the Core-owned sprint worktree;
+    // buildUserMessage reads context relative to the workspace. The lifecycle of
+    // that worktree — create, commit, merge, clean up — belongs to Core.
     const userMessage = await buildUserMessage(task, workspace);
-
-    // For the 'build' stage, create an isolated git worktree so the coder's
-    // changes stay separate from the main working tree.
-    let actualWorkspace = workspace;
-    let worktreeCleanup: (() => Promise<void>) | null = null;
-
-    if (task.stage === 'build') {
-      try {
-        const wt = await createWorktree(
-          workspace.repoPath,
-          task.sprint.id,
-          task.stage,
-        );
-        actualWorkspace = { ...workspace, worktreePath: wt.path };
-        worktreeCleanup = wt.cleanup;
-      } catch {
-        // Graceful fallback: work directly in the repo root.
-        // createWorktree itself shouldn't throw (it has its own try/catch),
-        // but guard here in case of an unexpected failure.
-      }
-    }
-
-    // Suppress unused-variable lint warning — actualWorkspace carries the
-    // worktreePath for the conductor/future tools that need it. We pass it
-    // through to preserve the interface contract even though the current
-    // Claude text-only call doesn't open files directly.
-    void actualWorkspace;
 
     try {
       const response = await this.client.messages.create({
@@ -90,10 +65,6 @@ export class ClaudePersonaAdapter implements PersonaAdapter {
         success: false,
         output: `Error calling Claude API: ${(err as Error).message}`,
       };
-    } finally {
-      if (worktreeCleanup) {
-        await worktreeCleanup().catch(() => {});
-      }
     }
   }
 }

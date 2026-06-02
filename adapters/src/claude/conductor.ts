@@ -55,6 +55,7 @@ export class ClaudeConductorAdapter implements ConductorAdapter {
       repoPath: ctx.repoPath,
       sprint,
       stage: currentStage.name,
+      ...(ctx.worktreePath ? { worktreePath: ctx.worktreePath } : {}),
     };
 
     const result = await persona.run(stageTask, workspace);

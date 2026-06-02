@@ -160,6 +160,11 @@ export interface ProjectContext {
   repoPath: string;
   understanding?: string;
   stateOps?: StateOps;
+  /**
+   * The active sprint's isolated worktree, when one exists (build/check/ship).
+   * Personas should run here so changes land on the sprint branch, not main.
+   */
+  worktreePath?: string;
 }
 
 export interface Workspace {

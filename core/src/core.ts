@@ -30,6 +30,18 @@ import type { AdapterSet } from './adapters/interfaces.js';
 import { FileState } from './state/index.js';
 import { SprintRunner } from './runner/index.js';
 import type { AdvanceResult } from './runner/index.js';
+import {
+  ensureSprintWorktree,
+  commitAll,
+  mergeBranch,
+  removeWorktree,
+  deleteBranch,
+  sprintBranch,
+  type SprintWorktree,
+} from './git.js';
+
+/** Stages that share the per-sprint worktree (the implementation lifecycle). */
+const WORKTREE_STAGES: StageName[] = ['build', 'check', 'ship'];
 
 export class Core {
   readonly eventEmitter: EventEmitter;
@@ -238,6 +250,25 @@ export class Core {
       sprint.stages.find(s => s.status === 'in_progress') ??
       sprint.stages[sprint.stages.length - 1];
 
+    // Land the change: merge the sprint branch into the repo's default branch so
+    // the coder's work is actually in the repository before the deploy adapter
+    // runs. Only attempts a merge if a sprint worktree/branch was produced.
+    const wt = await this.getSprintWorktree(sprintId);
+    if (wt) {
+      try {
+        await mergeBranch(this.state.repoPath, wt.branch, `Land ${sprintId}: ${sprint.goal}`);
+        await this.state.appendEvent({
+          actor: 'system', sprint: sprintId, stage: activeStageEntry.name,
+          type: 'artifact', ref: 'merge', note: `merged ${wt.branch} into default branch`,
+        });
+      } catch (err) {
+        await this.state.appendEvent({
+          actor: 'system', sprint: sprintId, stage: activeStageEntry.name,
+          type: 'message', ref: 'merge-failed', note: (err as Error).message,
+        });
+      }
+    }
+
     const workspace: Workspace = {
       repoPath: this.state.repoPath,
       sprint,
@@ -255,6 +286,9 @@ export class Core {
       ref: 'deploy-result',
       note: JSON.stringify(result),
     });
+
+    // The branch is now in the default branch; tear down the worktree.
+    if (wt) await this.teardownSprintWorktree(sprintId);
 
     return result;
   }
@@ -351,10 +385,16 @@ export class Core {
     const activeStageEntry = activeSprint.stages.find(
       s => s.status === 'in_progress',
     )!;
+    // For implementation stages, run against the sprint worktree so checks
+    // exercise the coder's changes rather than the default branch.
+    const wt = WORKTREE_STAGES.includes(activeStageEntry.name)
+      ? await this.getSprintWorktree(activeSprint.id)
+      : null;
     return {
       repoPath: this.state.repoPath,
       sprint: activeSprint,
       stage: activeStageEntry.name,
+      ...(wt ? { worktreePath: wt.path } : {}),
     };
   }
 
@@ -403,10 +443,19 @@ export class Core {
         // Sign-off not yet given — drive the conductor so it can request one, then stop.
       }
 
+      // Implementation stages share one per-sprint worktree (Core-owned) so the
+      // coder's changes persist on the sprint branch through check and ship.
+      let worktreePath: string | undefined;
+      if (WORKTREE_STAGES.includes(currentStage.name)) {
+        const wt = await this.ensureSprintWorktreeFor(sprintId);
+        worktreePath = wt?.path;
+      }
+
       const ctx: ProjectContext = {
         repoPath: this.state.repoPath,
         understanding: await this.state.readUnderstanding().catch(() => ''),
         stateOps: this.makeStateOps(sprintId),
+        worktreePath,
       };
 
       yield { type: 'progress', sprint: sprintId, stage: currentStage.name, data: `${currentStage.owner} working on ${currentStage.name}` };
@@ -415,6 +464,41 @@ export class Core {
         yield event;
         if (event.type === 'error') {
           return; // abort on conductor error
+        }
+      }
+
+      // After the coder finishes, commit whatever landed in the worktree so the
+      // sprint branch carries the real diff into the check and ship stages.
+      if (currentStage.name === 'build' && worktreePath) {
+        const commit = await commitAll(worktreePath, `build(${sprintId}): ${sprint.goal}`).catch(
+          (err: Error) => ({ committed: false, error: err.message }) as const,
+        );
+        await this.state.appendEvent({
+          actor: 'system', sprint: sprintId, stage: 'build', type: 'artifact', ref: 'commit',
+          note: commit.committed ? `committed ${('sha' in commit && commit.sha) || ''}` : 'no changes to commit',
+        });
+      }
+
+      // The check stage runs the configured check adapters against the sprint
+      // worktree, so tests/security exercise the coder's changes. Their recorded
+      // results are what the check gate reads — a failing check blocks advance.
+      if (currentStage.name === 'check') {
+        const ws: Workspace = {
+          repoPath: this.state.repoPath, sprint, stage: 'check',
+          ...(worktreePath ? { worktreePath } : {}),
+        };
+        for (const check of this.adapters.checks) {
+          let res: CheckResult;
+          try {
+            res = await check.run(ws);
+          } catch (err) {
+            res = { name: check.name, passed: false, output: (err as Error).message, ts: new Date().toISOString() };
+          }
+          await this.state.appendEvent({
+            actor: 'system', sprint: sprintId, stage: 'check', type: 'check', ref: check.name,
+            note: JSON.stringify(res),
+          });
+          yield { type: 'progress', sprint: sprintId, stage: 'check', data: `check ${check.name}: ${res.passed ? 'pass' : 'FAIL'}` };
         }
       }
 
@@ -475,6 +559,44 @@ export class Core {
         });
       },
     };
+  }
+
+  // ── Sprint worktree lifecycle (Core-owned; tracked in run.json) ──────────────
+
+  private async getSprintWorktree(sprintId: string): Promise<SprintWorktree | null> {
+    const run = await this.state.readRunState().catch(() => ({}) as Record<string, unknown>);
+    const worktrees = (run['worktrees'] as Record<string, SprintWorktree>) ?? {};
+    return worktrees[sprintId] ?? null;
+  }
+
+  /** Ensure the sprint worktree exists and is recorded in run.json. */
+  private async ensureSprintWorktreeFor(sprintId: string): Promise<SprintWorktree | null> {
+    const existing = await this.getSprintWorktree(sprintId);
+    const wt = await ensureSprintWorktree(this.state.repoPath, sprintId);
+    if (!wt) return existing; // not a git repo / no commits — degrade to repo root
+    if (!existing) {
+      const run = await this.state.readRunState().catch(() => ({}) as Record<string, unknown>);
+      const worktrees = (run['worktrees'] as Record<string, SprintWorktree>) ?? {};
+      worktrees[sprintId] = wt;
+      await this.state.writeRunState({ ...run, worktrees });
+      await this.state.appendEvent({
+        actor: 'system', sprint: sprintId, stage: 'build', type: 'artifact',
+        ref: 'worktree', note: `worktree ${wt.path} on ${wt.branch}`,
+      });
+    }
+    return wt;
+  }
+
+  /** Remove the sprint worktree and its (merged) branch; clear run.json. */
+  private async teardownSprintWorktree(sprintId: string): Promise<void> {
+    const wt = await this.getSprintWorktree(sprintId);
+    if (!wt) return;
+    await removeWorktree(this.state.repoPath, wt.path);
+    await deleteBranch(this.state.repoPath, sprintBranch(sprintId));
+    const run = await this.state.readRunState().catch(() => ({}) as Record<string, unknown>);
+    const worktrees = (run['worktrees'] as Record<string, SprintWorktree>) ?? {};
+    delete worktrees[sprintId];
+    await this.state.writeRunState({ ...run, worktrees });
   }
 }
 

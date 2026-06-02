@@ -8,7 +8,6 @@ import type {
 } from '@skipper/core';
 import { SYSTEM_PROMPTS } from '../claude/prompts.js';
 import { buildUserMessage } from '../claude/persona.js';
-import { createWorktree } from '../claude/worktree.js';
 
 export interface ClaudeCodeOptions {
   /** Model passed to `claude --model`. Default: 'claude-sonnet-4-6'. */
@@ -45,24 +44,17 @@ export class ClaudeCodePersonaAdapter implements PersonaAdapter {
     const systemPrompt = SYSTEM_PROMPTS[task.stage] ?? '';
     const userMessage = await buildUserMessage(task, workspace);
 
-    // The build stage runs in an isolated worktree so the coder's edits stay on
-    // a separate branch; other stages run in the repo root (read-mostly work).
-    let cwd = workspace.repoPath;
-    let cleanup: (() => Promise<void>) | null = null;
-    let worktreePath: string | undefined;
-    if (task.stage === 'build') {
-      const wt = await createWorktree(workspace.repoPath, task.sprint.id, task.stage);
-      cwd = wt.path;
-      worktreePath = wt.path;
-      cleanup = wt.cleanup;
-    }
+    // Run in the sprint worktree when Core provides one (build/check/ship), so
+    // edits land on the sprint branch. Core owns the worktree lifecycle — this
+    // adapter neither creates nor destroys it. Falls back to the repo root.
+    const cwd = workspace.worktreePath ?? workspace.repoPath;
 
     const args = ['-p', userMessage, '--output-format', 'json', '--model', this.model];
     if (systemPrompt) {
       args.push('--append-system-prompt', systemPrompt);
     }
     // Only the build stage edits files; let it do so without interactive prompts
-    // (safe because it runs in a throwaway worktree).
+    // (safe because it runs in an isolated, Core-managed worktree).
     if (task.stage === 'build') {
       args.push('--permission-mode', 'acceptEdits');
     }
@@ -86,18 +78,12 @@ export class ClaudeCodePersonaAdapter implements PersonaAdapter {
         // Not JSON (older CLI or text fallback) — keep raw stdout.
       }
 
-      return {
-        success: true,
-        output: output.trim(),
-        ...(worktreePath ? { artifactRef: `worktree:${worktreePath}` } : {}),
-      };
+      return { success: true, output: output.trim() };
     } catch (err: unknown) {
       return {
         success: false,
         output: `Failed to run Claude Code CLI: ${(err as Error).message}`,
       };
-    } finally {
-      if (cleanup) await cleanup().catch(() => {});
     }
   }
 }

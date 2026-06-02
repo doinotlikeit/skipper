@@ -32,6 +32,14 @@ real diff under the worktree, Skipper can build its own roadmap. Prove it end to
 end on a sample repo before pointing it at Skipper itself.
 (spec/04 Agent backend resolution, spec/07, spec/08)
 
+## INIT-7 — Build artifact lifecycle
+Make a sprint produce a real, landed change. Core owns one git worktree per
+sprint (branch `skipper/<sprintId>`): the coder works in it, Core commits the
+diff after build, the check stage runs against that branch, and `deploy` merges
+it into `main` after the ship sign-off. Without this the loop runs green but no
+code lands — so this is the last structural must-have before Skipper can fix
+itself. (spec/02 build artifact lifecycle, spec/03, spec/04)
+
 ## Later (not V1)
 Live Jira and Aha adapters beyond a reference each; additional personas;
 embedded SQLite only if concurrency forces it; hosted/multi-user.
